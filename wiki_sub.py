@@ -4,14 +4,22 @@ import json
 from google.cloud import pubsub_v1
 import streamlit as st
 
+from pymongo import MongoClient
+
 from dotenv import load_dotenv
 load_dotenv()
+
+
 publisher_client = pubsub_v1.PublisherClient()
 subscriber_client = pubsub_v1.SubscriberClient()
 
 project_id = 'eduimpact-504119'
 project_topic = 'wiki-topic'
 project_subscription = 'wiki-topic-sub'
+
+uri = os.getenv("MONGODB_URI")
+mongo_client = MongoClient(uri)
+collection = mongo_client['wiki']['changes']
 
 subscription_path = subscriber_client.subscription_path(project_id, project_subscription)
 
@@ -30,6 +38,7 @@ def ensure_subscription_exists():
 def callback(message):
     transformed_message = transform_message(message)
     print(json.dumps(transformed_message))
+    collection.insert_one(transformed_message) #insert_one adds an ObjectId "_id" to the dict
     message.ack() #Acknowledge the message
 
 def transform_message(message):
@@ -72,6 +81,8 @@ if 'message_count' not in st.session_state:
     st.session_state['message_count'] = 0
 
 # Send to MongoDB as Document
+
+
 # Send to BigQuery
 
 if __name__ == "__main__":
