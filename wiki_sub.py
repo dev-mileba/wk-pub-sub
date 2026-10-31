@@ -2,7 +2,7 @@ import datetime
 import os
 import json
 from google.cloud import pubsub_v1
-import streamlit as st
+
 
 from pymongo import MongoClient
 
@@ -38,6 +38,7 @@ def ensure_subscription_exists():
 def callback(message):
     transformed_message = transform_message(message)
     print(json.dumps(transformed_message))
+    transformed_message["received_at"] = datetime.datetime.now(datetime.timezone.utc) #used by the dashboard for time windows
     collection.insert_one(transformed_message) #insert_one adds an ObjectId "_id" to the dict
     message.ack() #Acknowledge the message
 
@@ -61,29 +62,12 @@ def transform_message(message):
         "byte_change": byte_change,
         "old_revision": event.get("revision", {}).get("old"),
         "new_revision": event.get("revision", {}).get("new"),
-        "timestamp": datetime.datetime.fromtimestamp(event.get("timestamp",0)).isoformat(),
+        "timestamp": datetime.datetime.fromtimestamp(event.get("timestamp",0)).isoformat() if event.get("timestamp") else None,
         "url": event.get("title_url")
     }
 
-# Simple Streamlit app to display the message in real-time
-st.title("Real-time Wikipedia Changes")
 
-# A card that shows the count of messages recieved
-message_count_card = st.empty()
-message_count = 0
-
-# A card that displays the latest message
-message_card = st.empty()
-message_card.markdown("Waiting for messages...")
-
-
-if 'message_count' not in st.session_state:
-    st.session_state['message_count'] = 0
-
-# Send to MongoDB as Document
-
-
-# Send to BigQuery
+#TODO: Send to BigQuery
 
 if __name__ == "__main__":
     ensure_subscription_exists()
