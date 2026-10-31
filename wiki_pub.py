@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+
 STREAM_URL = 'https://stream.wikimedia.org/v2/stream/recentchange'
 
 from google.cloud import pubsub_v1
@@ -54,13 +56,18 @@ def iter_events(session: requests.Session):
 
 #Publish an event to a Google Cloud Pub/Sub Topic
 def publish_to_pubsub(event):
-    data = json.dumps(event).encode('utf-8')
-    future = client.publish(project_topic, data)
-    print(f"Published event: {future.result()}")
+    try:
+        data = json.dumps(event).encode('utf-8')
+        future = client.publish(f'projects/{project_id}/topics/{project_topic}', data)
+        print(f"Published message ID: {future.result()}")
+    except Exception as e:
+        print(f'Failed to publish message: {e}')
 
 
-# # Call the function
-# if __name__ == '__main__':
-#     with requests.Session() as session:
-#         for event in iter_events(session):
-#             print(event)
+
+# Call the function
+if __name__ == '__main__':
+    with requests.Session() as session:
+        for event in iter_events(session):
+            # print(event)
+            publish_to_pubsub(event)
