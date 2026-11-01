@@ -32,6 +32,18 @@ MongoDB Atlas        database `wiki`, collection `changes`
 | `wiki_display.py` | Streamlit dashboard. Each refresh loads the events inside the selected time window from MongoDB and renders KPIs, charts and tables. |
 | `exp.ipynb` | Scratch notebook for experiments. |
 
+## Why Pub/Sub instead of writing straight to MongoDB?
+
+For a single stream and a single destination, a direct insert would be simpler. Pub/Sub sits in the middle for these reasons:
+
+- **Decoupling.** The publisher doesn't depend on MongoDB. If the database is slow, down, or unreachable (for example, an Atlas IP allowlist problem), the publisher keeps running.
+- **Buffering and durability.** Unacknowledged messages are kept (7 days by default), so you can stop and restart the subscriber without losing events. The Wikimedia stream is live-only, so events missed by a direct writer are gone for good.
+- **Retries.** If the subscriber callback fails, the message isn't acked and is redelivered.
+- **Fan-out.** More consumers (for example BigQuery, alerts, or ML processing) can be added as extra subscriptions without touching the publisher or the MongoDB writer.
+- **Scaling.** Several subscriber processes can share one subscription to split the load.
+- **Absorbing bursts.** The queue smooths out spikes in the feed so writes can catch up.
+
+
 ## Dashboard features
 
 - KPIs: events in window, events per minute, unique editors, bot share, new pages, net bytes changed

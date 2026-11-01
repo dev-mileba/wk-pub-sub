@@ -8,6 +8,7 @@ import json
 import time
 import os
 from dotenv import load_dotenv
+from google.cloud import pubsub_v1
 
 load_dotenv()
 
@@ -15,13 +16,13 @@ load_dotenv()
 
 STREAM_URL = 'https://stream.wikimedia.org/v2/stream/recentchange'
 
-from google.cloud import pubsub_v1
+
 
 #Step 1: create your client
 
 client = pubsub_v1.PublisherClient()
-project_id = 'eduimpact-504119'
-project_topic = 'wiki-topic'
+project_id = os.getenv("PROJECT_ID")
+project_topic = os.getenv("PROJECT_TOPIC")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -57,8 +58,8 @@ def iter_events(session: requests.Session):
 #Publish an event to a Google Cloud Pub/Sub Topic
 def publish_to_pubsub(event):
     try:
-        data = json.dumps(event).encode('utf-8')
-        future = client.publish(f'projects/{project_id}/topics/{project_topic}', data)
+        data = json.dumps(event).encode('utf-8') # Convert the event into JSON text (a universal format), then into bytes, which Pub/Sub requires
+        future = client.publish(f'projects/{project_id}/topics/{project_topic}', data) # Send the bytes to the topic's "address" and get back a "future" (a claim ticket for the result)
         print(f"Published message ID: {future.result()}")
     except Exception as e:
         print(f'Failed to publish message: {e}')
@@ -69,5 +70,4 @@ def publish_to_pubsub(event):
 if __name__ == '__main__':
     with requests.Session() as session:
         for event in iter_events(session):
-            # print(event)
             publish_to_pubsub(event)

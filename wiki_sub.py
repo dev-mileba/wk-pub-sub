@@ -13,9 +13,9 @@ load_dotenv()
 publisher_client = pubsub_v1.PublisherClient()
 subscriber_client = pubsub_v1.SubscriberClient()
 
-project_id = 'eduimpact-504119'
-project_topic = 'wiki-topic'
-project_subscription = 'wiki-topic-sub'
+project_id = os.getenv("PROJECT_ID")
+project_topic = os.getenv("PROJECT_TOPIC")
+project_subscription = os.getenv("PROJECT_SUBSCRIPTION")
 
 uri = os.getenv("MONGODB_URI")
 mongo_client = MongoClient(uri)
@@ -31,7 +31,7 @@ def ensure_subscription_exists():
     except Exception as e:
         print(f"Subscription '{project_subscription}' does not exist. creating it now...")
         topic_path = publisher_client.topic_path(project_id, project_topic)
-        subscriber_client.create_subscription(name=subscription_path, topic=project_topic)
+        subscriber_client.create_subscription(name=subscription_path, topic=topic_path)
         print(f"Subscription '{project_subscription}' created successfully")
 
 #Callback function to process incoming Pub/Sub messages
